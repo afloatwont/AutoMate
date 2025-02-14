@@ -4,6 +4,12 @@ import { queueService } from '../services/queueService.js';
 
 const router = express.Router();
 
+// Set io instance when routes are initialized
+router.use((req, res, next) => {
+  queueService.setIO(req.app.get('io'));
+  next();
+});
+
 router.post('/join', auth, (req, res) => {
   try {
     const position = queueService.join(req.user._id);
