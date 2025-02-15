@@ -17,29 +17,33 @@ class QueueService {
     }
   }
 
-  join(userId) {
-    if (this.queue.includes(userId)) {
+  join(user) {
+    if (this.queue.includes(user.email)) {
       throw new Error('Already in queue');
     }
-    this.queue.push(userId);
+    this.queue.push(user.email);
     this.emitQueueUpdate();
-    return this.queue.length;
+    return this.getPosition(user.email);
   }
 
-  leave(userId) {
-    this.queue = this.queue.filter(id => id !== userId);
+  leave(user) {
+    this.queue = this.queue.filter(email => email !== user.email);
     this.emitQueueUpdate();
   }
 
-  cancel(userId) {
-    this.queue = this.queue.filter(id => id !== userId);
-    this.queue.push(userId);
+  cancel(user) {
+    this.queue = this.queue.filter(email => email !== user.email);
+    this.queue.push(user.email);
     this.emitQueueUpdate();
-    return this.queue.length;
+    return this.getPosition(user.email);
   }
 
-  getPosition(userId) {
-    return this.queue.indexOf(userId) + 1;
+  getPosition(email) {
+    return this.queue.indexOf(email) + 1;
+  }
+
+  getCurrentQueue() {
+    return this.queue;
   }
 }
 
