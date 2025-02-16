@@ -9,45 +9,34 @@ router.use((req, res, next) => {
   next();
 });
 
-router.post('/join', auth, (req, res) => {
-  try {
-    const position = queueService.join(req.user);
-    res.json({ position });
-  } catch (error) {
-    res.status(400).json({ message: error.message });
-  }
-});
-
-router.post('/leave', auth, (req, res) => {
-  try {
-    queueService.leave(req.user);
-    res.json({ message: 'Removed from queue' });
-  } catch (error) {
-    res.status(500).json({ message: 'Error leaving queue' });
-  }
-});
-
-router.post('/cancel', auth, (req, res) => {
-  try {
-    const position = queueService.cancel(req.user);
-    res.json({ position });
-  } catch (error) {
-    res.status(500).json({ message: 'Error updating queue position' });
-  }
-});
-
 // Add a new route to get current queue
 router.get('/status', auth, (req, res) => {
   try {
-    const queue = queueService.getCurrentQueue();
+    const queueStatus = queueService.getCurrentQueue();
     const position = queueService.getPosition(req.user.email);
     res.json({ 
       position,
-      queueLength: queue.length,
-      isInQueue: queue.includes(req.user.email)
+      queueLength: queueStatus.length,
+      isInQueue: queueStatus.queue.some(u => u.email === req.user.email), // Check if user is in queue
+      // Only send queue details to drivers
+      ...(req.user.role === 'driver' && { queueDetails: queueStatus.queueDetails })
     });
   } catch (error) {
     res.status(500).json({ message: 'Error getting queue status' });
+  }
+});
+
+// New route for drivers to view queue
+router.get('/list', auth, (req, res) => {
+  try {
+    if (req.user.role !== 'driver') {
+      return res.status(403).json({ message: 'Access denied. Drivers only.' });
+    }
+
+    const queueStatus = queueService.getCurrentQueue();
+    res.json(queueStatus);
+  } catch (error) {
+    res.status(500).json({ message: 'Error getting queue list' });
   }
 });
 

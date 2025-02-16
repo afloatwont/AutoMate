@@ -5,8 +5,9 @@ export default async (req, res, next) => {
   try {
     const token = req.header('Authorization').replace('Bearer ', '');
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    console.log('Decoded:', decoded);
     const user = await User.findById(decoded.userId);
-    
+    console.log('User:', user);
     if (!user) {
       throw new Error();
     }

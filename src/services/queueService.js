@@ -1,6 +1,6 @@
 class QueueService {
   constructor() {
-    this.queue = [];
+    this.queue = []; // Store user objects
     this.io = null;
   }
 
@@ -12,38 +12,50 @@ class QueueService {
     if (this.io) {
       this.io.emit('queueUpdate', {
         queue: this.queue,
-        length: this.queue.length
+        length: this.queue.length,
+        queueDetails: this.queue.map((user, index) => ({ // Send user objects
+          user,
+          position: index + 1
+        }))
       });
+      console.log('Queue updated');
     }
   }
 
   join(user) {
-    if (this.queue.includes(user.email)) {
+    if (this.queue.some(u => u.email === user.email)) { // Check for existing user by email
       throw new Error('Already in queue');
     }
-    this.queue.push(user.email);
+    this.queue.push(user); // Store user object
     this.emitQueueUpdate();
     return this.getPosition(user.email);
   }
 
   leave(user) {
-    this.queue = this.queue.filter(email => email !== user.email);
+    this.queue = this.queue.filter(u => u.email !== user.email); // Filter by email
     this.emitQueueUpdate();
   }
 
   cancel(user) {
-    this.queue = this.queue.filter(email => email !== user.email);
-    this.queue.push(user.email);
+    this.queue = this.queue.filter(u => u.email !== user.email); // Filter by email
+    this.queue.push(user); // Add user object
     this.emitQueueUpdate();
     return this.getPosition(user.email);
   }
 
   getPosition(email) {
-    return this.queue.indexOf(email) + 1;
+    return this.queue.findIndex(u => u.email === email) + 1; // Find index by email
   }
 
   getCurrentQueue() {
-    return this.queue;
+    return {
+      queue: this.queue,
+      length: this.queue.length,
+      queueDetails: this.queue.map((user, index) => ({ // Send user objects
+        user,
+        position: index + 1
+      }))
+    };
   }
 }
 

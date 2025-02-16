@@ -6,18 +6,25 @@ const router = express.Router();
 
 router.post('/signup', async (req, res) => {
   try {
-    const { email, password, role } = req.body;
+    const { email, password, role, name } = req.body; // Include name
     
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(400).json({ message: 'User already exists' });
     }
 
-    const user = new User({ email, password, role });
+    const user = new User({ email, password, role, name }); // Include name
     await user.save();
 
     const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET);
-    res.status(201).json({ token });
+    res.status(201).json({
+      token,
+      user: {
+        id: user._id.toString(),
+        email: user.email,
+        role: user.role
+      }
+    });
   } catch (error) {
     res.status(500).json({ message: 'Error creating user' });
   }
@@ -31,9 +38,16 @@ router.post('/login', async (req, res) => {
     if (!user || user.password !== password) {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
-
-    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET);
-    res.json({ token });
+    console.log('User:', user);
+    const token = jwt.sign({ userId: user._id.toString() }, process.env.JWT_SECRET);
+    res.json({
+      token,
+      user: {
+        id: user._id.toString(),
+        email: user.email,
+        role: user.role
+      }
+    });
   } catch (error) {
     res.status(500).json({ message: 'Error logging in' });
   }
