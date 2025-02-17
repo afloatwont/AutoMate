@@ -1,8 +1,9 @@
+import dotenv from 'dotenv';
+dotenv.config();
 import express from 'express';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import mongoose from 'mongoose';
-import dotenv from 'dotenv';
 import authRoutes from './routes/authRoutes.js';
 import queueRoutes from './routes/queueRoutes.js';
 import morgan from 'morgan';
@@ -10,8 +11,8 @@ import cors from 'cors';
 import auth from './middleware/auth.js';
 import User from './models/User.js';
 import jwt from 'jsonwebtoken';
+import {queueService} from './services/queueService.js';
 
-dotenv.config();
 
 const app = express();
 const httpServer = createServer(app);
@@ -43,11 +44,8 @@ const io = new Server(httpServer, {
 io.use(async (socket, next) => {
   try {
     const token = socket.handshake.auth.token;
-    console.log(token);
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    console.log('Decoded:', decoded);
     const user = await User.findOne({ _id: decoded.userId });
-    console.log('User:', user);
 
     if (!user) {
       return next(new Error('Authentication error'));
@@ -63,16 +61,22 @@ io.use(async (socket, next) => {
 
 io.on('connection', (socket) => {
   console.log('Client connected', socket.user.email);
+  io.emit('queueUpdate', queueService.getCurrentQueue());
 
   socket.on('test', async (data) => {
     console.log('Test event', data);
+    socket.emit('test_response', { message: 'Test response' });
   });
 
-  socket.on('queue_join', async (data) => {
+  socket.on('qj', async () => {
+
+    console.log('Queue join');
     try {
       const position = queueService.join(socket.user);
+      console.log(socket.user);
       io.emit('queueUpdate', queueService.getCurrentQueue());
     } catch (error) {
+      console.log('Queue error:', error.message);
       socket.emit('queue_error', { message: error.message });
     }
   });

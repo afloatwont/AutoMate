@@ -1,6 +1,6 @@
 class QueueService {
   constructor() {
-    this.queue = []; // Store user objects
+    this.queue = [];
     this.io = null;
   }
 
@@ -13,7 +13,7 @@ class QueueService {
       this.io.emit('queueUpdate', {
         queue: this.queue,
         length: this.queue.length,
-        queueDetails: this.queue.map((user, index) => ({ // Send user objects
+        queueDetails: this.queue.map((user, index) => ({ 
           user,
           position: index + 1
         }))
@@ -26,16 +26,18 @@ class QueueService {
     if (this.queue.some(u => u.email === user.email)) { // Check for existing user by email
       throw new Error('Already in queue');
     }
-    this.queue.push(user); // Store user object
+    this.queue.push(user);
     this.emitQueueUpdate();
     return this.getPosition(user.email);
   }
 
+
   leave(user) {
-    this.queue = this.queue.filter(u => u.email !== user.email); // Filter by email
+    this.queue = this.queue.filter(u => u.email !== user.email); 
     this.emitQueueUpdate();
   }
 
+  // PUSH TO THE END OF THE QUEUE
   cancel(user) {
     this.queue = this.queue.filter(u => u.email !== user.email); // Filter by email
     this.queue.push(user); // Add user object
