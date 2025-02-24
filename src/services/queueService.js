@@ -31,18 +31,23 @@ class QueueService {
     return this.getPosition(user.email);
   }
 
-
-  leave(user) {
-    this.queue = this.queue.filter(u => u.email !== user.email); 
+  // Just remove from queue
+  leave({ email }) {
+    this.queue = this.queue.filter(u => u.email !== email);
     this.emitQueueUpdate();
   }
 
-  // PUSH TO THE END OF THE QUEUE
-  cancel(user) {
-    this.queue = this.queue.filter(u => u.email !== user.email); // Filter by email
-    this.queue.push(user); // Add user object
+  // Move to end of queue
+  cancel({ email }) {
+    if (this.queue.length > 1) {
+      const user = this.queue.find(u => u.email === email);
+      if (!user) return;
+      
+      this.queue = this.queue.filter(u => u.email !== email);
+      this.queue.push(user);
+    }
     this.emitQueueUpdate();
-    return this.getPosition(user.email);
+    return this.getPosition(email);
   }
 
   getPosition(email) {

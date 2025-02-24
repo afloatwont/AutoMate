@@ -33,7 +33,7 @@ mongoose.connect(process.env.MONGODB_URI)
 
 const io = new Server(httpServer, {
   cors: {
-    origin: ['*','http://localhost:5173', 'http://127.0.0.1:5173'],
+    origin: ['*','http://localhost:5173', 'http://127.0.0.1:5173', 'https://automate-eight-psi.vercel.app'],
     methods: ['GET', 'POST'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true
@@ -68,7 +68,7 @@ io.on('connection', (socket) => {
     socket.emit('test_response', { message: 'Test response' });
   });
 
-  socket.on('qj', async () => {
+  socket.on('queue_join', async () => {
 
     console.log('Queue join');
     try {
@@ -82,13 +82,41 @@ io.on('connection', (socket) => {
   });
 
   socket.on('queue_leave', async (data) => {
-    queueService.leave(socket.user);
-    io.emit('queueUpdate', queueService.getCurrentQueue());
+    try {
+      const { email } = data;
+      if (!email) {
+        return socket.emit('queue_error', { message: 'Email is required' });
+      }
+
+      // Only drivers or the user themselves can remove from queue
+      if (socket.user.role !== 'driver' && socket.user.email !== email) {
+        return socket.emit('queue_error', { message: 'Unauthorized action' });
+      }
+
+      queueService.leave({ email });
+      io.emit('queueUpdate', queueService.getCurrentQueue());
+    } catch (error) {
+      socket.emit('queue_error', { message: error.message });
+    }
   });
 
   socket.on('queue_cancel', async (data) => {
-    const position = queueService.cancel(socket.user);
-    io.emit('queueUpdate', queueService.getCurrentQueue());
+    try {
+      const { email } = data;
+      if (!email) {
+        return socket.emit('queue_error', { message: 'Email is required' });
+      }
+
+      // Only drivers or the user themselves can cancel
+      if (socket.user.role !== 'driver' && socket.user.email !== email) {
+        return socket.emit('queue_error', { message: 'Unauthorized action' });
+      }
+
+      const position = queueService.cancel({ email });
+      io.emit('queueUpdate', queueService.getCurrentQueue());
+    } catch (error) {
+      socket.emit('queue_error', { message: error.message });
+    }
   });
 
   socket.on('disconnect', () => {
